@@ -2,6 +2,7 @@
 
 import (
 	"os"
+	"strconv"
 
 	"github.com/joho/godotenv"
 	log "github.com/sirupsen/logrus"
@@ -50,6 +51,36 @@ func NewConfig() (*Config, error) {
 	err = viper.Unmarshal(cfg)
 	if err != nil {
 		return nil, err
+	}
+
+	if host := os.Getenv("SERVICE_HOST"); host != "" {
+		cfg.ServiceHost = host
+	}
+	if port := os.Getenv("SERVICE_PORT"); port != "" {
+		if parsed, parseErr := strconv.Atoi(port); parseErr == nil {
+			cfg.ServicePort = parsed
+		}
+	}
+
+	if host := os.Getenv("REDIS_HOST"); host != "" {
+		cfg.RedisHost = host
+	}
+	if port := os.Getenv("REDIS_PORT"); port != "" {
+		if parsed, parseErr := strconv.Atoi(port); parseErr == nil {
+			cfg.RedisPort = parsed
+		}
+	}
+	if password := os.Getenv("REDIS_PASSWORD"); password != "" {
+		cfg.RedisPassword = password
+	}
+	if db := os.Getenv("REDIS_DB"); db != "" {
+		if parsed, parseErr := strconv.Atoi(db); parseErr == nil {
+			cfg.RedisDB = parsed
+		}
+	}
+
+	if jwtSecret := os.Getenv("JWT_SECRET"); jwtSecret != "" {
+		cfg.JWTSecret = jwtSecret
 	}
 
 	// MinIO configuration from environment

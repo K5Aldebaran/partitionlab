@@ -6,6 +6,10 @@ import (
 )
 
 func FromEnv() string {
+	if databaseURL := os.Getenv("DATABASE_URL"); databaseURL != "" {
+		return databaseURL
+	}
+
 	host := os.Getenv("DB_HOST")
 	port := os.Getenv("DB_PORT")
 	user := os.Getenv("DB_USER")
@@ -32,5 +36,10 @@ func FromEnv() string {
 		dbname = "dehydration"
 	}
 
-	return fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable", host, port, user, pass, dbname)
+	sslMode := os.Getenv("DB_SSLMODE")
+	if sslMode == "" {
+		sslMode = "disable"
+	}
+
+	return fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s", host, port, user, pass, dbname, sslMode)
 }
