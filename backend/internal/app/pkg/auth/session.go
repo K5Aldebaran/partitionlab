@@ -43,6 +43,28 @@ func NewSessionService(host string, port int, password string, db int) (*Session
 	}, nil
 }
 
+// NewSessionServiceFromURL создает сервис сессий из REDIS_URL/redis://.../rediss://...
+func NewSessionServiceFromURL(redisURL string) (*SessionService, error) {
+	opts, err := redis.ParseURL(redisURL)
+	if err != nil {
+		return nil, fmt.Errorf("invalid redis url: %w", err)
+	}
+
+	client := redis.NewClient(opts)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if err := client.Ping(ctx).Err(); err != nil {
+		return nil, fmt.Errorf("redis connection failed: %w", err)
+	}
+
+	return &SessionService{
+		client: client,
+		ttl:    24 * time.Hour, // сессия живет 24 часа
+	}, nil
+}
+
 // Create создает новую сессию
 func (s *SessionService) Create(ctx context.Context, sessionID string, data SessionData) error {
 	jsonData, err := json.Marshal(data)

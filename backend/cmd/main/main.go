@@ -2,6 +2,7 @@
 
 import (
 	"fmt"
+	"os"
 
 	_ "partitionlab/docs" // Swagger docs
 	"partitionlab/internal/app/config"
@@ -74,7 +75,13 @@ func main() {
 	logrus.Info("JWT service initialized")
 
 	// Init Session Service (Redis)
-	sessionService, err := auth.NewSessionService(conf.RedisHost, conf.RedisPort, conf.RedisPassword, conf.RedisDB)
+	var sessionService *auth.SessionService
+	redisURL := os.Getenv("REDIS_URL")
+	if redisURL != "" {
+		sessionService, err = auth.NewSessionServiceFromURL(redisURL)
+	} else {
+		sessionService, err = auth.NewSessionService(conf.RedisHost, conf.RedisPort, conf.RedisPassword, conf.RedisDB)
+	}
 	if err != nil {
 		logrus.Fatalf("error initializing session service: %v", err)
 	}
