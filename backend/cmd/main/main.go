@@ -6,6 +6,7 @@ import (
 
 	_ "partitionlab/docs" // Swagger docs
 	"partitionlab/internal/app/config"
+	"partitionlab/internal/app/ds"
 	"partitionlab/internal/app/dsn"
 	"partitionlab/internal/app/handler"
 	"partitionlab/internal/app/middleware"
@@ -17,6 +18,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"github.com/sirupsen/logrus"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 )
 
 // @title Partition Lab API
@@ -65,6 +68,10 @@ func main() {
 	postgresString := dsn.FromEnv()
 	fmt.Println(postgresString)
 
+	if err := ensureSchema(postgresString); err != nil {
+		logrus.Fatalf("error migrating schema: %v", err)
+	}
+
 	rep, errRep := repository.New(postgresString)
 	if errRep != nil {
 		logrus.Fatalf("error initializing repository: %v", errRep)
@@ -100,4 +107,23 @@ func main() {
 
 	application := pkg.NewApp(conf, router, hand)
 	application.RunApp()
+}
+
+func ensureSchema(postgresString string) error {
+	database, err := gorm.Open(postgres.Open(postgresString), &gorm.Config{})
+	if err != nil {
+		return err
+	}
+
+	if err := database.AutoMigrate(
+		&ds.User{},
+		&ds.Partition{},
+		&ds.Calculation{},
+		&ds.CalculationItem{},
+	); err != nil {
+		return err
+	}
+
+	database.Exec("CREATE UNIQUE INDEX IF NOT EXISTS ux_partitions_title ON partitions (title)")
+	return nil
 }
